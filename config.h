@@ -9,13 +9,9 @@ class Config {
 public:
     Config()
         : m_projectFilePath("")
-        , m_enable("")
-        , m_template("")
-        , m_premium("")
         , m_cppcheck("cppcheck")
         , m_filename("")
-
-        // TODO: more settings?
+        , m_args({})
     {
     }
 
@@ -34,13 +30,9 @@ public:
 
 private:
     std::filesystem::path m_projectFilePath = "";
-    std::string m_enable;
-    std::string m_template;
-    std::string m_premium;
     std::string m_cppcheck;
     std::string m_filename;
-
-    // TODO: more settings?
+    std::vector<std::string> m_args;
 };
 
 #endif

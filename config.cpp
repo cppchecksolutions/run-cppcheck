@@ -57,31 +57,17 @@ std::string Config::load(const std::filesystem::path &path)
             continue;
         }
 
-        if (key == "template") {
-            if (!value.is<std::string>()) {
+        if (key == "args") {
+            if (!value.is<picojson::array>())
                 return "Invalid value type for '" + key + "'";
+
+            for (auto arg : value.get<picojson::array>()) {
+                if (!arg.is<std::string>())
+                    return "Invalid value type for array element in '" + key + "'";
+                m_args.push_back(arg.get<std::string>());
             }
-            m_template = value.get<std::string>();
             continue;
         }
-
-        if (key == "enable") {
-            if (!value.is<std::string>()) {
-                return "Invalid value type for '" + key + "'";
-            }
-            m_enable = value.get<std::string>();
-            continue;
-        }
-
-        if (key == "premium") {
-            if (!value.is<std::string>()) {
-                return "Invalid value type for '" + key + "'";
-            }
-            m_premium = value.get<std::string>();
-            continue;
-        }
-
-        // TODO: more settings?
 
         return "Invalid config key '" + key + "'";
     }
@@ -95,14 +81,8 @@ std::string Config::command() const
 
     cmd += m_cppcheck;
 
-    if (!m_enable.empty())
-        cmd += " --enable=" + m_enable;
-
-    if (!m_template.empty())
-        cmd += " --template=" + m_template;
-
-    if (!m_premium.empty())
-        cmd += " --premium=" + m_premium;
+    for (auto arg : m_args)
+        cmd += " " + arg;
 
     if (!m_projectFilePath.empty()) {
 
@@ -137,22 +117,7 @@ std::string Config::parseArgs(int argc, char **argv)
         const char *arg = *argv;
         const char *value;
 
-        if ((value = matchArg(arg, "--enable="))) {
-            m_enable = value;
-            continue;
-        }
-
-        if ((value = matchArg(arg, "--template="))) {
-            m_template = value;
-            continue;
-        }
-
-        if ((value = matchArg(arg, "--premium="))) {
-            m_premium = value;
-            continue;
-        }
-
-        if ((value = matchArg(arg, "--config="))) {
+        if ((value = startsWith(arg, "--config="))) {
             std::string err = load(value);
             if (!err.empty())
                 return "Failed to load config file '" + std::string(value) + "': " + err;
