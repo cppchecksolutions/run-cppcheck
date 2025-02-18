@@ -121,8 +121,8 @@ std::string Config::command() const
     return cmd;
 }
 
-static const char *matchArg(const char *arg, const char *start) {
-    if (std::strlen(arg) <= std::strlen(start) || std::strncmp(arg, start, std::strlen(start)) != 0)
+static const char *startsWith(const char *arg, const char *start) {
+    if (std::strncmp(arg, start, std::strlen(start)) != 0)
         return NULL;
     return arg + std::strlen(start);
 }
