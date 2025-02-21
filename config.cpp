@@ -24,11 +24,11 @@ std::string Config::load(const std::filesystem::path &path)
     if (ifs.fail())
         return std::strerror(errno);
 
-    std::string text = buffer.data();
+    const std::string text = buffer.data();
 
     // Parse JSON
     picojson::value data;
-    std::string err = picojson::parse(data, text);
+    const std::string err = picojson::parse(data, text);
     if (!err.empty()) {
         return err;
     }
@@ -39,7 +39,7 @@ std::string Config::load(const std::filesystem::path &path)
     const picojson::object &obj = data.get<picojson::object>();
 
     // Read settings
-    for (auto [key, value] : obj) {
+    for (const auto &[key, value] : obj) {
 
         if (key == "project_file") {
             if (!value.is<std::string>()) {
@@ -81,7 +81,7 @@ std::string Config::command() const
 
     cmd += m_cppcheck;
 
-    for (auto arg : m_args)
+    for (const auto &arg : m_args)
         cmd += " " + arg;
 
     if (!m_projectFilePath.empty()) {
@@ -93,7 +93,7 @@ std::string Config::command() const
         cmd += " --project=" + m_projectFilePath.string() + " --file-filter=" + filter;
 
     } else {
-        cmd += " " + m_filename;
+        cmd += " " + m_filename.string();
     }
 
     cmd += " 2>&1";
@@ -113,14 +113,14 @@ std::string Config::parseArgs(int argc, char **argv)
 
     ++argv;
 
+    std::filesystem::path configPath = "";
+
     for (; *argv; ++argv) {
         const char *arg = *argv;
         const char *value;
 
         if ((value = startsWith(arg, "--config="))) {
-            std::string err = load(value);
-            if (!err.empty())
-                return "Failed to load config file '" + std::string(value) + "': " + err;
+            configPath = value;
             continue;
         }
 
@@ -135,6 +135,35 @@ std::string Config::parseArgs(int argc, char **argv)
 
     if (m_filename.empty())
         return "Missing filename";
+
+    if (configPath.empty())
+        configPath = findConfig(m_filename);
+
+    if (configPath.empty())
+        return "Failed to find config file";
+
+    const std::string err = load(configPath);
+    if (err.empty())
+        return "";
+    return "Failed to load '" + configPath.string() + "': " + err;
+}
+
+// Find config file by recursively searching parent directories of input file
+std::filesystem::path Config::findConfig(const std::filesystem::path &input_path)
+{
+    auto path = input_path;
+
+    if (path.is_relative())
+        path = std::filesystem::current_path() / path;
+
+    do {
+        path = path.parent_path();
+        const auto config_path = path / "run-cppcheck-config.json";
+
+        if (std::filesystem::exists(config_path))
+            return config_path;
+
+    } while (path != path.root_path());
 
     return "";
 }
