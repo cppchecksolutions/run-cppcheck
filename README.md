@@ -19,4 +19,4 @@ The configuration file is written in json, as **run-cppcheck-config.json**. It i
 - **log_file**: Path to log file. The default log file location is `$XDG_STATE_HOME/run-cppcheck` or `$HOME/.local/state/run-cppcheck` on Linux,
                 and `%LOCALAPPDATA%\run-cppcheck` on Windows. The log file may provide more information than the editor plugin if analysis fails.
 - **enable_logging**: Default is `true`.
-- **args**: Extra arguments to pass to cppcheck. Example: `["--enable=style"]`.
+- **extra_args**: Extra arguments to pass to cppcheck. Example: `["--enable=style"]`.

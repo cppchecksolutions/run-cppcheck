@@ -71,7 +71,7 @@ std::string Config::load(const std::filesystem::path &path)
             continue;
         }
 
-        if (key == "args") {
+        if (key == "extra_args") {
             if (!value.is<picojson::array>())
                 return "Invalid value type for '" + key + "'";
 
@@ -150,8 +150,10 @@ std::string Config::parseArgs(int argc, char **argv)
             continue;
         }
 
-        if (arg[0] == '-')
-            return "Invalid option '" + std::string(arg) + "'";
+        if (arg[0] == '-') {
+            m_args.push_back(arg);
+            continue;
+        }
 
         if (!m_filename.empty())
             return "Multiple filenames provided";
