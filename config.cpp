@@ -135,6 +135,47 @@ static std::filesystem::path normalizePath(const std::filesystem::path path)
     return result;
 }
 
+std::string Config::matchFilenameFromCompileCommand()
+{
+    if (m_projectFilePath.empty() || m_projectFilePath.extension() != ".json")
+        return "";
+
+    // Read compile_commands file
+    std::ifstream ifs(m_projectFilePath);
+    if (ifs.fail())
+        return std::strerror(errno);
+
+    const std::string text(std::istreambuf_iterator<char>(ifs), {});
+
+    // Parse JSON
+    picojson::value compileCommands;
+    const std::string err = picojson::parse(compileCommands, text);
+    if (!err.empty()) {
+        return err;
+    }
+
+    if (!compileCommands.is<picojson::array>())
+        return "Compilation database is not a JSON array";
+
+    for (const picojson::value &fileInfo : compileCommands.get<picojson::array>()) {
+        picojson::object obj = fileInfo.get<picojson::object>();
+
+        if (obj.count("file") && obj["file"].is<std::string>()) {
+            const std::string file = obj["file"].get<std::string>();
+
+            // TODO should we warn if the file is not found?
+            std::error_code err;
+            if (std::filesystem::equivalent(file, m_filename, err)) {
+                m_filename = file;
+                return "";
+            }
+        }
+
+    }
+
+    return "";
+}
+
 std::string Config::parseArgs(int argc, char **argv)
 {
     (void) argc;
@@ -170,12 +211,12 @@ std::string Config::parseArgs(int argc, char **argv)
             return error;
     }
     if (m_configPath.empty())
-        m_configPath = findConfig(m_filename);
+        m_configPath = findFile(m_filename, "run-cppcheck-config.json");
 
     if (m_configPath.empty())
         return "Failed to find 'run-cppcheck-config.json' in any parent directory of analyzed file";
 
-    const std::string err = load(m_configPath);
+    std::string err = load(m_configPath);
     if (!err.empty())
         return "Failed to load '" + m_configPath.string() + "': " + err;
 
@@ -185,11 +226,17 @@ std::string Config::parseArgs(int argc, char **argv)
     if (m_filename.is_relative())
         m_filename = normalizePath(std::filesystem::current_path() / m_filename);
 
+    err = matchFilenameFromCompileCommand();
+
+    // Only warn if compile_commands.json is corrupted
+    if (!err.empty())
+        return "Failed to process compile_commands.json: " + err;
+
     return "";
 }
 
 // Find config file by recursively searching parent directories of input file
-std::filesystem::path Config::findConfig(const std::filesystem::path &input_path)
+std::filesystem::path Config::findFile(const std::filesystem::path &input_path, const std::string &filename)
 {
     auto path = input_path;
 
@@ -198,7 +245,7 @@ std::filesystem::path Config::findConfig(const std::filesystem::path &input_path
 
     do {
         path = path.parent_path();
-        const auto config_path = path / "run-cppcheck-config.json";
+        const auto config_path = path / filename;
 
         if (std::filesystem::exists(config_path))
             return config_path;
