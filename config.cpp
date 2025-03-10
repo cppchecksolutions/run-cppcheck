@@ -173,7 +173,7 @@ std::string Config::matchFilenameFromCompileCommand()
 
     }
 
-    return "File not found";
+    return "";
 }
 
 std::string Config::parseArgs(int argc, char **argv)
@@ -227,9 +227,10 @@ std::string Config::parseArgs(int argc, char **argv)
         m_filename = normalizePath(std::filesystem::current_path() / m_filename);
 
     err = matchFilenameFromCompileCommand();
+
+    // Only warn if compile_commands.json is corrupted
     if (!err.empty())
-        return
-            "Failed to find matching file in compile_commands.json: " + err;
+        return "Failed to process compile_commands.json: " + err;
 
     return "";
 }
