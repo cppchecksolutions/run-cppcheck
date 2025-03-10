@@ -137,6 +137,9 @@ static std::filesystem::path normalizePath(const std::filesystem::path path)
 
 std::string Config::matchFilenameFromCompileCommand()
 {
+    if (m_projectFilePath.empty() || m_projectFilePath.extension() != ".json")
+        return "";
+
     // Read compile_commands file
     std::ifstream ifs(m_projectFilePath);
     if (ifs.fail())
