@@ -137,13 +137,8 @@ static std::filesystem::path normalizePath(const std::filesystem::path path)
 
 std::string Config::matchFilenameFromCompileCommand()
 {
-    auto path = findFile(m_cppcheck, "compile_commands.json");
-
-    if (path.empty())
-        return "Failed to find 'compile_commands.json' in any parent directory of cppcheck";
-
     // Read compile_commands file
-    std::ifstream ifs(path);
+    std::ifstream ifs(m_projectFilePath);
     if (ifs.fail())
         return std::strerror(errno);
 
