@@ -4,6 +4,22 @@ A wrapper for cppcheck to simplify cppcheck integration. This program exists to 
 to configure how to run cppcheck on a single file, that can be shared between editor plugins.
 The log file also provides additional information that plugins may be lacking.
 
+## Building
+
+### CMake
+```console
+mkdir build && cd build
+cmake ..
+make
+```
+
+### Bazel
+```console
+bazel build //:run-cppcheck
+```
+
+The compiled binary will be located at `bazel-bin/run-cppcheck`.
+
 ## Invocation
 
 ```console

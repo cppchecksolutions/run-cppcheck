@@ -1,0 +1,18 @@
+# Build options
+build --enable_platform_specific_config
+build --cxxopt=-std=c++17
+
+# Platform-specific settings
+build:linux --copt=-static
+build:linux --copt=-static-libgcc
+build:linux --copt=-static-libstdc++
+
+# Windows specific settings
+build:windows --copt=/MT
+
+# Testing options
+test --test_output=errors
+
+# Release build settings
+build:release -c opt
+build:release --strip=always
