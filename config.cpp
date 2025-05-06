@@ -176,7 +176,6 @@ std::string Config::matchFilenameFromCompileCommand()
             // TODO should we warn if the file is not found?
             std::error_code err;
             if (std::filesystem::equivalent(file, m_filename, err)) {
-                m_filename = file;
                 return "";
             }
         }
