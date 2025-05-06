@@ -95,8 +95,18 @@ std::string Config::command() const
 
     cmd += "\"" + m_cppcheck + "\"";
 
-    for (const auto &arg : m_args)
-        cmd += " \"" + arg + "\"";
+    for (const auto &arg : m_args) {
+        // If arg contains double quotes, escape them
+        std::string escapedArg = arg;
+        size_t pos = 0;
+        while ((pos = escapedArg.find("\"", pos)) != std::string::npos) {
+            escapedArg.replace(pos, 1, "\\\"");
+            pos += 2;
+        }
+        cmd += " \"" + escapedArg + "\"";
+
+    }
+
 
     if (!m_projectFilePath.empty()) {
         cmd += " \"--project=" + m_projectFilePath.string() + "\" \"--file-filter=" + m_filename.string() + "\"";
