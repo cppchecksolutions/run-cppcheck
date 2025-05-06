@@ -200,6 +200,10 @@ std::string Config::parseArgs(int argc, char **argv)
             continue;
         }
 
+        if ((value = startsWith(arg, "--language="))) {
+            continue;
+        }
+
         if (arg[0] == '-') {
             m_args.push_back(arg);
             continue;
