@@ -1,0 +1,14 @@
+cc_binary(
+    name = "run-cppcheck",
+    srcs = [
+        "main.cpp",
+        "config.cpp",
+        "config.h",
+        "picojson.h",
+    ],
+    copts = [
+        "-std=c++17",
+    ],
+    visibility = ["//visibility:public"],
+)
+

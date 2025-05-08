@@ -95,8 +95,18 @@ std::string Config::command() const
 
     cmd += "\"" + m_cppcheck + "\"";
 
-    for (const auto &arg : m_args)
-        cmd += " \"" + arg + "\"";
+    for (const auto &arg : m_args) {
+        // If arg contains double quotes, escape them
+        std::string escapedArg = arg;
+        size_t pos = 0;
+        while ((pos = escapedArg.find("\"", pos)) != std::string::npos) {
+            escapedArg.replace(pos, 1, "\\\"");
+            pos += 2;
+        }
+        cmd += " \"" + escapedArg + "\"";
+
+    }
+
 
     if (!m_projectFilePath.empty()) {
         cmd += " \"--project=" + m_projectFilePath.string() + "\" \"--file-filter=" + m_filename.string() + "\"";
@@ -166,7 +176,6 @@ std::string Config::matchFilenameFromCompileCommand()
             // TODO should we warn if the file is not found?
             std::error_code err;
             if (std::filesystem::equivalent(file, m_filename, err)) {
-                m_filename = file;
                 return "";
             }
         }
@@ -188,6 +197,10 @@ std::string Config::parseArgs(int argc, char **argv)
 
         if ((value = startsWith(arg, "--config="))) {
             m_configPath = value;
+            continue;
+        }
+
+        if ((value = startsWith(arg, "--language="))) {
             continue;
         }
 
