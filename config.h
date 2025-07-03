@@ -15,6 +15,7 @@ public:
         , m_cppcheck("cppcheck")
         , m_filename("")
         , m_args({})
+        , m_printVersion(false)
     {
     }
 
@@ -41,6 +42,11 @@ public:
         return m_configPath;
     }
 
+    bool printVersion() const
+    {
+        return m_printVersion;
+    }
+
 private:
     static std::filesystem::path findFile(const std::filesystem::path &input_path, const std::string &filename);
     static std::string getDefaultLogFilePath(std::filesystem::path &path);
@@ -53,6 +59,7 @@ private:
     std::string m_cppcheck;
     std::filesystem::path m_filename;
     std::vector<std::string> m_args;
+    bool m_printVersion;
 };
 
 #endif
