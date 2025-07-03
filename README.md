@@ -36,3 +36,7 @@ The configuration file is written in json, as **run-cppcheck-config.json**. It i
                 and `%LOCALAPPDATA%\run-cppcheck` on Windows. The log file may provide more information than the editor plugin if analysis fails.
 - **enable_logging**: Default is `true`.
 - **extra_args**: Extra arguments to pass to cppcheck. Example: `["--enable=style"]`.
+
+**NOTE:** Some plugins use the `--version` flag to determine the version of cppcheck. For these plugin, you need
+to place a run-cppcheck-config.json in the directory where the plugin runs the command, providing the **cppcheck** field.
+If this configuration is not found, run-cppcheck tries to find cppcheck in PATH.

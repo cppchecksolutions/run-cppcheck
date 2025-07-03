@@ -95,23 +95,27 @@ std::string Config::command() const
 
     cmd += "\"" + m_cppcheck + "\"";
 
-    for (const auto &arg : m_args) {
-        // If arg contains double quotes, escape them
-        std::string escapedArg = arg;
-        size_t pos = 0;
-        while ((pos = escapedArg.find("\"", pos)) != std::string::npos) {
-            escapedArg.replace(pos, 1, "\\\"");
-            pos += 2;
-        }
-        cmd += " \"" + escapedArg + "\"";
-
-    }
-
-
-    if (!m_projectFilePath.empty()) {
-        cmd += " \"--project=" + m_projectFilePath.string() + "\" \"--file-filter=" + m_filename.string() + "\"";
+    if (m_printVersion) {
+        cmd += " \"--version\"";
     } else {
-        cmd += " \"" + m_filename.string() + "\"";
+        for (const auto &arg : m_args) {
+            // If arg contains double quotes, escape them
+            std::string escapedArg = arg;
+            size_t pos = 0;
+            while ((pos = escapedArg.find("\"", pos)) != std::string::npos) {
+                escapedArg.replace(pos, 1, "\\\"");
+                pos += 2;
+            }
+            cmd += " \"" + escapedArg + "\"";
+
+        }
+
+
+        if (!m_projectFilePath.empty()) {
+            cmd += " \"--project=" + m_projectFilePath.string() + "\" \"--file-filter=" + m_filename.string() + "\"";
+        } else {
+            cmd += " \"" + m_filename.string() + "\"";
+        }
     }
 
     cmd += " 2>&1";
@@ -185,6 +189,15 @@ std::string Config::matchFilenameFromCompileCommand()
     return "";
 }
 
+static bool fileExists(const std::filesystem::path &path)
+{
+#ifdef _WIN32
+        return !_access(path.string().c_str(), 0);
+#else
+        return !access(path.string().c_str(), F_OK);
+#endif
+}
+
 std::string Config::parseArgs(int argc, char **argv)
 {
     (void) argc;
@@ -204,6 +217,11 @@ std::string Config::parseArgs(int argc, char **argv)
             continue;
         }
 
+        if (std::string(arg) == "--version") {
+            m_printVersion = true;
+            continue;
+        }
+
         if (arg[0] == '-') {
             m_args.push_back(arg);
             continue;
@@ -215,35 +233,51 @@ std::string Config::parseArgs(int argc, char **argv)
         m_filename = arg;
     }
 
-    if (m_filename.empty())
-        return "Missing filename";
+    if (!m_printVersion) {
+        if (m_filename.empty())
+            return "Missing filename";
 
-    if (m_logFilePath.empty()) {
-        const std::string error = getDefaultLogFilePath(m_logFilePath);
-        if (!error.empty())
-            return error;
+        if (m_logFilePath.empty()) {
+            const std::string error = getDefaultLogFilePath(m_logFilePath);
+            if (!error.empty())
+                return error;
+        }
+
+        if (m_configPath.empty())
+            m_configPath = findFile(m_filename, "run-cppcheck-config.json");
+
+        if (m_configPath.empty())
+            return "Failed to find 'run-cppcheck-config.json' in any parent directory of analyzed file";
+
+        std::string err = load(m_configPath);
+        if (!err.empty())
+            return "Failed to load '" + m_configPath.string() + "': " + err;
+
+        if (!m_projectFilePath.empty() && m_projectFilePath.is_relative())
+            m_projectFilePath = m_configPath.parent_path() / m_projectFilePath;
+
+        if (m_filename.is_relative())
+            m_filename = normalizePath(std::filesystem::current_path() / m_filename);
+
+        err = matchFilenameFromCompileCommand();
+
+        // Only warn if compile_commands.json is corrupted
+        if (!err.empty())
+            return "Failed to process compile_commands.json: " + err;
+    } else {
+
+        // If --version is used there is no input file, so check for config
+        // in current working directory
+        if (m_configPath.empty())
+            m_configPath = std::filesystem::current_path() / "run-cppcheck-config.json";
+
+        if (!fileExists(m_configPath))
+            return "";
+
+        std::string err = load(m_configPath);
+        if (!err.empty())
+            return "Failed to load '" + m_configPath.string() + "': " + err;
     }
-    if (m_configPath.empty())
-        m_configPath = findFile(m_filename, "run-cppcheck-config.json");
-
-    if (m_configPath.empty())
-        return "Failed to find 'run-cppcheck-config.json' in any parent directory of analyzed file";
-
-    std::string err = load(m_configPath);
-    if (!err.empty())
-        return "Failed to load '" + m_configPath.string() + "': " + err;
-
-    if (!m_projectFilePath.empty() && m_projectFilePath.is_relative())
-        m_projectFilePath = m_configPath.parent_path() / m_projectFilePath;
-
-    if (m_filename.is_relative())
-        m_filename = normalizePath(std::filesystem::current_path() / m_filename);
-
-    err = matchFilenameFromCompileCommand();
-
-    // Only warn if compile_commands.json is corrupted
-    if (!err.empty())
-        return "Failed to process compile_commands.json: " + err;
 
     return "";
 }

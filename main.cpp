@@ -82,7 +82,10 @@ int main(int argc, char** argv) {
     std::string output;
     int res = executeCommand(cmd, output);
 
-    std::cerr << output;
+    if (config.printVersion())
+        std::cout << output;
+    else
+        std::cerr << output;
     logfile << output;
 
     return res;
